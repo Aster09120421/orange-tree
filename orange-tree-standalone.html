@@ -1986,6 +1986,24 @@ pre {
   line-height: 1.5;
 }
 
+.tree-mode-toggle {
+  width: 100%;
+  min-height: 34px;
+  margin: 4px 0 10px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+  letter-spacing: 0.05em;
+}
+
+.tree-mode-toggle:hover,
+.tree-mode-toggle:focus-visible {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
 .tree-owner-summary {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -2017,6 +2035,17 @@ pre {
   color: var(--ink-muted);
   background: transparent;
   font-size: 8px;
+}
+
+.tree-owner-summary .tree-destroy-button {
+  color: var(--danger);
+  border-color: rgba(223, 119, 81, 0.58);
+}
+
+.tree-owner-summary .tree-destroy-button.is-confirming {
+  color: #fff4ef;
+  background: rgba(223, 119, 81, 0.78);
+  border-color: var(--danger);
 }
 
 .tree-create-section {
@@ -2067,6 +2096,14 @@ pre {
   background: var(--amber);
   font-size: 10px;
   letter-spacing: 0.05em;
+}
+
+.tree-create-hint {
+  margin: 7px 0 0;
+  color: var(--ink-faint);
+  font-size: 7px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .reply-panel {
@@ -3849,7 +3886,10 @@ blockquote {
             <p class="tree-access-description" data-i18n="treeDialogDescription">
               每棵个人橘树都有六位编号。输入编号即可查看留言并回复。
             </p>
-            <div class="tree-access-section">
+            <button class="tree-mode-toggle" id="toggleTreeJoinButton" type="button" data-i18n="showJoinTree">
+              已有编号？进入朋友的橘树
+            </button>
+            <div class="tree-access-section" id="treeJoinSection" hidden>
               <div class="tree-section-heading">
                 <span data-i18n="joinExistingTree">进入已有橘树</span>
                 <b>JOIN</b>
@@ -3875,6 +3915,9 @@ blockquote {
               <div>
                 <button id="openOwnTreeButton" type="button" data-i18n="enterMyTree">进入我的树</button>
                 <button id="copyTreeCodeButton" type="button" data-i18n="copyCode">复制编号</button>
+                <button class="tree-destroy-button" id="destroyPrivateTreeButton" type="button" data-i18n="destroyTree">
+                  销毁这棵树
+                </button>
               </div>
             </div>
             <div class="tree-create-section" id="treeCreateSection">
@@ -3910,6 +3953,7 @@ blockquote {
               <button class="tree-create-button" id="createTreeButton" type="button" data-i18n="createTree">
                 种下我的橘树
               </button>
+              <p class="tree-create-hint" data-i18n="treeCodeAuto">六位访问编号会在创建后自动生成。</p>
             </div>
           </div>
         </section>
@@ -3980,8 +4024,10 @@ blockquote {
       privateTree: "私密橘树",
       treeSpace: "我的橘树",
       treeDialogTitle: "进入一棵私密橘树。",
-      treeDialogDescription: "每棵个人橘树都有六位编号。输入编号即可查看留言并回复。",
+      treeDialogDescription: "创建时无需填写编号，系统会自动生成随机六位编号；输入朋友分享的编号可进入已有私密树。",
       joinExistingTree: "进入已有橘树",
+      showJoinTree: "已有编号？进入朋友的橘树",
+      hideJoinTree: "返回种一棵自己的橘树",
       treeCodeLabel: "橘树编号",
       treeCodePlaceholder: "输入六位编号",
       enterTree: "进入",
@@ -3996,6 +4042,13 @@ blockquote {
       firstTreeMessage: "第一句留言",
       firstTreeMessagePlaceholder: "写下一句只属于这棵树的话……",
       createTree: "种下我的橘树",
+      treeCodeAuto: "六位访问编号会在创建后自动生成。",
+      destroyTree: "销毁这棵树",
+      confirmDestroyTree: "再次点击永久销毁",
+      treeDestroyed: "私密树已销毁。",
+      treeDestroyDenied: "只有这棵树的创建者可以销毁它。",
+      treeDestroyFailed: "销毁失败，请稍后重试。",
+      treeOwnerMissing: "当前浏览器没有这棵树的销毁凭据。",
       treeNotFound: "没有找到这个编号，请检查后重试。",
       treeCreateRequired: "请先写下第一句留言。",
       treeNameRequired: "请先给这棵橘树取名。",
@@ -4051,8 +4104,10 @@ blockquote {
       privateTree: "Private tree",
       treeSpace: "My tree",
       treeDialogTitle: "Enter a private orange tree.",
-      treeDialogDescription: "Every personal tree has a six-digit code. Enter one to read messages and reply.",
+      treeDialogDescription: "Choose a name and first message. A random six-digit code is created automatically. Use a friend's code to enter their tree.",
       joinExistingTree: "Enter an existing tree",
+      showJoinTree: "Have a code? Enter a friend's tree",
+      hideJoinTree: "Back to planting a private tree",
       treeCodeLabel: "Tree code",
       treeCodePlaceholder: "Six-digit code",
       enterTree: "Enter",
@@ -4067,6 +4122,13 @@ blockquote {
       firstTreeMessage: "First message",
       firstTreeMessagePlaceholder: "Write something that belongs only to this tree…",
       createTree: "Plant my tree",
+      treeCodeAuto: "A random six-digit access code will be generated automatically.",
+      destroyTree: "Destroy this tree",
+      confirmDestroyTree: "Tap again to destroy permanently",
+      treeDestroyed: "Private tree destroyed.",
+      treeDestroyDenied: "Only the tree creator can destroy it.",
+      treeDestroyFailed: "Could not destroy the tree. Try again later.",
+      treeOwnerMissing: "This browser no longer has the ownership credential for this tree.",
       treeNotFound: "No tree was found for that code. Please check and try again.",
       treeCreateRequired: "Write the first message before planting a tree.",
       treeNameRequired: "Give this orange tree a name first.",
@@ -4122,8 +4184,10 @@ blockquote {
       privateTree: "プライベートツリー",
       treeSpace: "私の木",
       treeDialogTitle: "プライベートなオレンジの木へ。",
-      treeDialogDescription: "個人の木には六桁の番号があります。番号を入力するとメッセージを読み、返信できます。",
+      treeDialogDescription: "木の名前と最初のメッセージを決めると、六桁の番号が自動で作られます。友人の番号を入力すると、その木を訪ねられます。",
       joinExistingTree: "既存の木に入る",
+      showJoinTree: "番号をお持ちですか？友人の木へ",
+      hideJoinTree: "自分の木を植える",
       treeCodeLabel: "木の番号",
       treeCodePlaceholder: "六桁の番号",
       enterTree: "入る",
@@ -4138,6 +4202,13 @@ blockquote {
       firstTreeMessage: "最初のメッセージ",
       firstTreeMessagePlaceholder: "この木だけに残す言葉を…",
       createTree: "私の木を植える",
+      treeCodeAuto: "六桁のアクセス番号は作成後に自動生成されます。",
+      destroyTree: "この木を破棄",
+      confirmDestroyTree: "もう一度タップで完全に破棄",
+      treeDestroyed: "プライベートツリーを破棄しました。",
+      treeDestroyDenied: "この木を作った人だけが破棄できます。",
+      treeDestroyFailed: "破棄できませんでした。後でもう一度お試しください。",
+      treeOwnerMissing: "このブラウザには破棄に必要な所有情報がありません。",
       treeNotFound: "その番号の木は見つかりませんでした。確認してもう一度お試しください。",
       treeCreateRequired: "最初のメッセージを書いてください。",
       treeNameRequired: "先にこのオレンジの木へ名前をつけてください。",
@@ -4193,8 +4264,10 @@ blockquote {
       privateTree: "비공개 나무",
       treeSpace: "내 나무",
       treeDialogTitle: "비공개 오렌지 나무로 들어가기.",
-      treeDialogDescription: "개인 나무마다 6자리 번호가 있습니다. 번호를 입력하면 메시지를 읽고 답장할 수 있습니다.",
+      treeDialogDescription: "이름과 첫 메시지를 정하면 6자리 번호가 자동으로 생성됩니다. 친구의 번호를 입력하면 그 나무를 방문할 수 있습니다.",
       joinExistingTree: "기존 나무 들어가기",
+      showJoinTree: "번호가 있나요? 친구의 나무로",
+      hideJoinTree: "내 나무 심기로 돌아가기",
       treeCodeLabel: "나무 번호",
       treeCodePlaceholder: "6자리 번호",
       enterTree: "들어가기",
@@ -4209,6 +4282,13 @@ blockquote {
       firstTreeMessage: "첫 번째 메시지",
       firstTreeMessagePlaceholder: "이 나무에만 남길 문장을 적어 보세요…",
       createTree: "내 나무 심기",
+      treeCodeAuto: "6자리 접속 번호는 생성 후 자동으로 만들어집니다.",
+      destroyTree: "이 나무 폐기",
+      confirmDestroyTree: "한 번 더 눌러 영구 폐기",
+      treeDestroyed: "비공개 나무를 폐기했습니다.",
+      treeDestroyDenied: "이 나무를 만든 사람만 폐기할 수 있습니다.",
+      treeDestroyFailed: "나무를 폐기하지 못했습니다. 잠시 후 다시 시도하세요.",
+      treeOwnerMissing: "이 브라우저에 나무를 폐기할 소유 정보가 없습니다.",
       treeNotFound: "해당 번호의 나무를 찾지 못했습니다. 확인 후 다시 시도하세요.",
       treeCreateRequired: "첫 번째 메시지를 먼저 작성해 주세요.",
       treeNameRequired: "먼저 이 오렌지 나무에 이름을 지어 주세요.",
@@ -4264,8 +4344,10 @@ blockquote {
       privateTree: "Árbol privado",
       treeSpace: "Mi árbol",
       treeDialogTitle: "Entrar en un naranjo privado.",
-      treeDialogDescription: "Cada árbol personal tiene un código de seis dígitos. Introdúcelo para leer los mensajes y responder.",
+      treeDialogDescription: "Elige un nombre y el primer mensaje. El código de seis dígitos se genera automáticamente. Usa el código de un amigo para visitar su árbol.",
       joinExistingTree: "Entrar en un árbol existente",
+      showJoinTree: "¿Tienes un código? Entra en el árbol de un amigo",
+      hideJoinTree: "Volver a plantar un árbol privado",
       treeCodeLabel: "Código del árbol",
       treeCodePlaceholder: "Código de seis dígitos",
       enterTree: "Entrar",
@@ -4280,6 +4362,13 @@ blockquote {
       firstTreeMessage: "Primer mensaje",
       firstTreeMessagePlaceholder: "Escribe algo que pertenezca solo a este árbol…",
       createTree: "Plantar mi árbol",
+      treeCodeAuto: "El código de acceso de seis dígitos se generará automáticamente.",
+      destroyTree: "Destruir este árbol",
+      confirmDestroyTree: "Toca otra vez para destruirlo definitivamente",
+      treeDestroyed: "Árbol privado destruido.",
+      treeDestroyDenied: "Solo quien creó el árbol puede destruirlo.",
+      treeDestroyFailed: "No se pudo destruir el árbol. Inténtalo más tarde.",
+      treeOwnerMissing: "Este navegador ya no tiene la credencial de propiedad del árbol.",
       treeNotFound: "No se encontró ningún árbol con ese código. Compruébalo e inténtalo de nuevo.",
       treeCreateRequired: "Escribe el primer mensaje antes de plantar el árbol.",
       treeNameRequired: "Ponle un nombre a este naranjo primero.",
@@ -4335,8 +4424,10 @@ blockquote {
       privateTree: "Arbre privé",
       treeSpace: "Mon arbre",
       treeDialogTitle: "Entrer dans un oranger privé.",
-      treeDialogDescription: "Chaque arbre personnel possède un code à six chiffres. Saisissez-le pour lire les messages et répondre.",
+      treeDialogDescription: "Choisissez un nom et un premier message. Un code aléatoire à six chiffres est créé automatiquement. Utilisez le code d'un ami pour visiter son arbre.",
       joinExistingTree: "Entrer dans un arbre existant",
+      showJoinTree: "Vous avez un code ? Entrez dans l'arbre d'un ami",
+      hideJoinTree: "Revenir à la création d'un arbre privé",
       treeCodeLabel: "Code de l'arbre",
       treeCodePlaceholder: "Code à six chiffres",
       enterTree: "Entrer",
@@ -4351,6 +4442,13 @@ blockquote {
       firstTreeMessage: "Premier message",
       firstTreeMessagePlaceholder: "Écrivez quelque chose qui n'appartienne qu'à cet arbre…",
       createTree: "Planter mon arbre",
+      treeCodeAuto: "Un code d'accès aléatoire à six chiffres sera généré automatiquement.",
+      destroyTree: "Détruire cet arbre",
+      confirmDestroyTree: "Touchez encore pour détruire définitivement",
+      treeDestroyed: "Arbre privé détruit.",
+      treeDestroyDenied: "Seul le créateur de l'arbre peut le détruire.",
+      treeDestroyFailed: "Impossible de détruire l'arbre. Réessayez plus tard.",
+      treeOwnerMissing: "Ce navigateur ne possède plus le justificatif de propriété de l'arbre.",
       treeNotFound: "Aucun arbre ne correspond à ce code. Vérifiez-le et réessayez.",
       treeCreateRequired: "Écrivez le premier message avant de planter l'arbre.",
       treeNameRequired: "Donnez d'abord un nom à cet oranger.",
@@ -4406,8 +4504,10 @@ blockquote {
       privateTree: "Privater Baum",
       treeSpace: "Mein Baum",
       treeDialogTitle: "Einen privaten Orangenbaum betreten.",
-      treeDialogDescription: "Jeder persönliche Baum besitzt einen sechsstelligen Code. Gib ihn ein, um Nachrichten zu lesen und zu antworten.",
+      treeDialogDescription: "Wähle einen Namen und die erste Nachricht. Ein zufälliger sechsstelliger Code wird automatisch erstellt. Mit dem Code eines Freundes kannst du dessen Baum besuchen.",
       joinExistingTree: "Bestehenden Baum betreten",
+      showJoinTree: "Hast du einen Code? Baum eines Freundes öffnen",
+      hideJoinTree: "Zurück zum Anlegen eines privaten Baums",
       treeCodeLabel: "Baumcode",
       treeCodePlaceholder: "Sechsstelliger Code",
       enterTree: "Eintreten",
@@ -4422,6 +4522,13 @@ blockquote {
       firstTreeMessage: "Erste Nachricht",
       firstTreeMessagePlaceholder: "Schreibe etwas, das nur zu diesem Baum gehört…",
       createTree: "Meinen Baum pflanzen",
+      treeCodeAuto: "Ein zufälliger sechsstelliger Zugangscode wird automatisch erstellt.",
+      destroyTree: "Diesen Baum zerstören",
+      confirmDestroyTree: "Erneut tippen, um endgültig zu zerstören",
+      treeDestroyed: "Privater Baum zerstört.",
+      treeDestroyDenied: "Nur der Ersteller des Baums kann ihn zerstören.",
+      treeDestroyFailed: "Der Baum konnte nicht zerstört werden. Versuche es später erneut.",
+      treeOwnerMissing: "Dieser Browser besitzt keine Eigentumsberechtigung mehr für diesen Baum.",
       treeNotFound: "Für diesen Code wurde kein Baum gefunden. Bitte prüfe ihn und versuche es erneut.",
       treeCreateRequired: "Schreibe die erste Nachricht, bevor du den Baum pflanzt.",
       treeNameRequired: "Gib diesem Orangenbaum zuerst einen Namen.",
@@ -4477,8 +4584,10 @@ blockquote {
       privateTree: "Личное дерево",
       treeSpace: "Моё дерево",
       treeDialogTitle: "Войти в личное апельсиновое дерево.",
-      treeDialogDescription: "У каждого личного дерева есть шестизначный код. Введите его, чтобы читать сообщения и отвечать.",
+      treeDialogDescription: "Выберите название и первое сообщение — случайный шестизначный код создастся автоматически. Код друга позволит зайти в его дерево.",
       joinExistingTree: "Войти в существующее дерево",
+      showJoinTree: "Есть код? Войти в дерево друга",
+      hideJoinTree: "Вернуться к созданию личного дерева",
       treeCodeLabel: "Код дерева",
       treeCodePlaceholder: "Шестизначный код",
       enterTree: "Войти",
@@ -4493,6 +4602,13 @@ blockquote {
       firstTreeMessage: "Первое сообщение",
       firstTreeMessagePlaceholder: "Напишите то, что принадлежит только этому дереву…",
       createTree: "Посадить моё дерево",
+      treeCodeAuto: "Случайный шестизначный код доступа будет создан автоматически.",
+      destroyTree: "Уничтожить это дерево",
+      confirmDestroyTree: "Нажмите ещё раз для окончательного удаления",
+      treeDestroyed: "Личное дерево удалено.",
+      treeDestroyDenied: "Только создатель дерева может его удалить.",
+      treeDestroyFailed: "Не удалось удалить дерево. Повторите попытку позже.",
+      treeOwnerMissing: "В этом браузере больше нет данных владельца дерева.",
       treeNotFound: "Дерево с таким кодом не найдено. Проверьте код и попробуйте снова.",
       treeCreateRequired: "Сначала напишите первое сообщение.",
       treeNameRequired: "Сначала дайте этому дереву название.",
@@ -4948,6 +5064,8 @@ blockquote {
   const returnMainButton = document.querySelector("#returnMainButton");
   const treeAccessDialog = document.querySelector("#treeAccessDialog");
   const closeTreeAccessButton = document.querySelector("#closeTreeAccessButton");
+  const toggleTreeJoinButton = document.querySelector("#toggleTreeJoinButton");
+  const treeJoinSection = document.querySelector("#treeJoinSection");
   const treeCodeInput = document.querySelector("#treeCodeInput");
   const enterTreeButton = document.querySelector("#enterTreeButton");
   const treeAccessError = document.querySelector("#treeAccessError");
@@ -4955,6 +5073,7 @@ blockquote {
   const ownerTreeCodeLabel = document.querySelector("#ownerTreeCode");
   const openOwnTreeButton = document.querySelector("#openOwnTreeButton");
   const copyTreeCodeButton = document.querySelector("#copyTreeCodeButton");
+  const destroyPrivateTreeButton = document.querySelector("#destroyPrivateTreeButton");
   const treeCreateSection = document.querySelector("#treeCreateSection");
   const treeNameInput = document.querySelector("#treeNameInput");
   const treeOwnerName = document.querySelector("#treeOwnerName");
@@ -5167,6 +5286,8 @@ blockquote {
   let currentPersonalNote = null;
   let communityEnabled = false;
   let harvestConfirmTimer = 0;
+  let destroyTreeConfirmTimer = 0;
+  let treeJoinVisible = false;
   let soundEnabled = false;
   let audioContext = null;
   let ambientMaster = null;
@@ -6144,17 +6265,43 @@ blockquote {
   function updateTreeAccessSummary() {
     const hasOwnerTree = Boolean(ownerTreeCode);
     treeOwnerSummary.hidden = !hasOwnerTree;
-    treeCreateSection.hidden = hasOwnerTree;
+    treeJoinSection.hidden = !treeJoinVisible;
+    treeCreateSection.hidden = hasOwnerTree || treeJoinVisible;
+    toggleTreeJoinButton.textContent = t(treeJoinVisible ? "hideJoinTree" : "showJoinTree");
     if (hasOwnerTree) ownerTreeCodeLabel.textContent = ownerTreeCode;
   }
 
+  function resetDestroyTreeControl() {
+    window.clearTimeout(destroyTreeConfirmTimer);
+    destroyPrivateTreeButton.classList.remove("is-confirming");
+    destroyPrivateTreeButton.textContent = t("destroyTree");
+  }
+
+  function toggleTreeJoin() {
+    treeJoinVisible = !treeJoinVisible;
+    treeAccessError.textContent = "";
+    updateTreeAccessSummary();
+    window.setTimeout(
+      () =>
+        (treeJoinVisible
+          ? treeCodeInput
+          : ownerTreeCode
+            ? openOwnTreeButton
+            : treeNameInput
+        ).focus(),
+      40,
+    );
+  }
+
   function openTreeAccessDialog() {
+    treeJoinVisible = false;
     treeCodeInput.value = "";
     treeAccessError.textContent = "";
+    resetDestroyTreeControl();
     updateTreeAccessSummary();
     treeAccessDialog.classList.add("is-open");
     treeAccessDialog.setAttribute("aria-hidden", "false");
-    window.setTimeout(() => treeCodeInput.focus(), 80);
+    window.setTimeout(() => (ownerTreeCode ? openOwnTreeButton : treeNameInput).focus(), 80);
   }
 
   function closeTreeAccessDialog() {
@@ -6361,6 +6508,84 @@ blockquote {
       document.execCommand("copy");
       treeAccessError.textContent = t("treeCodeCopied");
     }
+  }
+
+  function ownerTokensForTree(code) {
+    const notes =
+      code === currentPrivateCode ? privateTreeNotes : localPrivateTrees[code] || [];
+    return [
+      ...new Set(
+        [...notes]
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map((note) => ownedOrangeTokens[note.id])
+          .filter(Boolean),
+      ),
+    ];
+  }
+
+  async function destroyPrivateTree() {
+    if (!ownerTreeCode) return;
+    if (!destroyPrivateTreeButton.classList.contains("is-confirming")) {
+      window.clearTimeout(destroyTreeConfirmTimer);
+      destroyPrivateTreeButton.classList.add("is-confirming");
+      destroyPrivateTreeButton.textContent = t("confirmDestroyTree");
+      destroyTreeConfirmTimer = window.setTimeout(resetDestroyTreeControl, 4200);
+      return;
+    }
+
+    resetDestroyTreeControl();
+    const code = ownerTreeCode;
+    const notes = [...(localPrivateTrees[code] || [])];
+    const tokenCandidates = ownerTokensForTree(code);
+    const sharedTokens = tokenCandidates.filter((token) => token !== "local");
+    if (!tokenCandidates.length) {
+      treeAccessError.textContent = t("treeOwnerMissing");
+      return;
+    }
+
+    destroyPrivateTreeButton.disabled = true;
+    let remoteDeleted = false;
+    let deletionError = null;
+    for (const token of sharedTokens) {
+      try {
+        await apiRequest(`/api/trees/${encodeURIComponent(code)}`, {
+          method: "DELETE",
+          body: JSON.stringify({ ownerToken: token }),
+        });
+        remoteDeleted = true;
+        break;
+      } catch (error) {
+        deletionError = error;
+        if (error.status === 404) {
+          remoteDeleted = true;
+          break;
+        }
+        if (error.status !== 403) break;
+      }
+    }
+
+    const hasLocalOwner = tokenCandidates.includes("local");
+    if (sharedTokens.length && !remoteDeleted && !hasLocalOwner) {
+      destroyPrivateTreeButton.disabled = false;
+      treeAccessError.textContent =
+        deletionError?.status === 403 ? t("treeDestroyDenied") : t("treeDestroyFailed");
+      return;
+    }
+
+    notes.forEach((note) => delete ownedOrangeTokens[note.id]);
+    delete localPrivateTrees[code];
+    saveLocalPrivateTrees();
+    saveOwnedOrangeTokens();
+    ownerTreeCode = "";
+    saveOwnerTreeCode();
+    updateTreeAccessSummary();
+    destroyPrivateTreeButton.disabled = false;
+
+    if (currentPrivateCode === code) {
+      backToMainTree();
+    }
+    treeAccessError.textContent = t("treeDestroyed");
+    setLog(`tree.destroy // #${code} // private`);
   }
 
   function openGuideDialog() {
@@ -6917,12 +7142,14 @@ blockquote {
   returnMainButton.addEventListener("click", backToMainTree);
   closeTreeAccessButton.addEventListener("click", closeTreeAccessDialog);
   treeAccessDialog.querySelector("[data-close-tree-access]").addEventListener("click", closeTreeAccessDialog);
+  toggleTreeJoinButton.addEventListener("click", toggleTreeJoin);
   enterTreeButton.addEventListener("click", enterPrivateTreeFromInput);
   createTreeButton.addEventListener("click", createMyPrivateTree);
   openOwnTreeButton.addEventListener("click", () => {
     if (ownerTreeCode) openPrivateTree(ownerTreeCode);
   });
   copyTreeCodeButton.addEventListener("click", copyOwnerTreeCode);
+  destroyPrivateTreeButton.addEventListener("click", destroyPrivateTree);
   treeCodeInput.addEventListener("input", () => {
     treeCodeInput.value = treeCodeInput.value.replace(/\D/g, "").slice(0, 6);
     treeAccessError.textContent = "";

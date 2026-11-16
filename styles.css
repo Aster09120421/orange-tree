@@ -1973,6 +1973,24 @@ pre {
   line-height: 1.5;
 }
 
+.tree-mode-toggle {
+  width: 100%;
+  min-height: 34px;
+  margin: 4px 0 10px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+  letter-spacing: 0.05em;
+}
+
+.tree-mode-toggle:hover,
+.tree-mode-toggle:focus-visible {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
 .tree-owner-summary {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -2004,6 +2022,17 @@ pre {
   color: var(--ink-muted);
   background: transparent;
   font-size: 8px;
+}
+
+.tree-owner-summary .tree-destroy-button {
+  color: var(--danger);
+  border-color: rgba(223, 119, 81, 0.58);
+}
+
+.tree-owner-summary .tree-destroy-button.is-confirming {
+  color: #fff4ef;
+  background: rgba(223, 119, 81, 0.78);
+  border-color: var(--danger);
 }
 
 .tree-create-section {
@@ -2054,6 +2083,14 @@ pre {
   background: var(--amber);
   font-size: 10px;
   letter-spacing: 0.05em;
+}
+
+.tree-create-hint {
+  margin: 7px 0 0;
+  color: var(--ink-faint);
+  font-size: 7px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .reply-panel {

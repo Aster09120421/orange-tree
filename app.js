@@ -60,6 +60,8 @@
   const returnMainButton = document.querySelector("#returnMainButton");
   const treeAccessDialog = document.querySelector("#treeAccessDialog");
   const closeTreeAccessButton = document.querySelector("#closeTreeAccessButton");
+  const toggleTreeJoinButton = document.querySelector("#toggleTreeJoinButton");
+  const treeJoinSection = document.querySelector("#treeJoinSection");
   const treeCodeInput = document.querySelector("#treeCodeInput");
   const enterTreeButton = document.querySelector("#enterTreeButton");
   const treeAccessError = document.querySelector("#treeAccessError");
@@ -67,6 +69,7 @@
   const ownerTreeCodeLabel = document.querySelector("#ownerTreeCode");
   const openOwnTreeButton = document.querySelector("#openOwnTreeButton");
   const copyTreeCodeButton = document.querySelector("#copyTreeCodeButton");
+  const destroyPrivateTreeButton = document.querySelector("#destroyPrivateTreeButton");
   const treeCreateSection = document.querySelector("#treeCreateSection");
   const treeNameInput = document.querySelector("#treeNameInput");
   const treeOwnerName = document.querySelector("#treeOwnerName");
@@ -279,6 +282,8 @@
   let currentPersonalNote = null;
   let communityEnabled = false;
   let harvestConfirmTimer = 0;
+  let destroyTreeConfirmTimer = 0;
+  let treeJoinVisible = false;
   let soundEnabled = false;
   let audioContext = null;
   let ambientMaster = null;
@@ -1256,17 +1261,43 @@
   function updateTreeAccessSummary() {
     const hasOwnerTree = Boolean(ownerTreeCode);
     treeOwnerSummary.hidden = !hasOwnerTree;
-    treeCreateSection.hidden = hasOwnerTree;
+    treeJoinSection.hidden = !treeJoinVisible;
+    treeCreateSection.hidden = hasOwnerTree || treeJoinVisible;
+    toggleTreeJoinButton.textContent = t(treeJoinVisible ? "hideJoinTree" : "showJoinTree");
     if (hasOwnerTree) ownerTreeCodeLabel.textContent = ownerTreeCode;
   }
 
+  function resetDestroyTreeControl() {
+    window.clearTimeout(destroyTreeConfirmTimer);
+    destroyPrivateTreeButton.classList.remove("is-confirming");
+    destroyPrivateTreeButton.textContent = t("destroyTree");
+  }
+
+  function toggleTreeJoin() {
+    treeJoinVisible = !treeJoinVisible;
+    treeAccessError.textContent = "";
+    updateTreeAccessSummary();
+    window.setTimeout(
+      () =>
+        (treeJoinVisible
+          ? treeCodeInput
+          : ownerTreeCode
+            ? openOwnTreeButton
+            : treeNameInput
+        ).focus(),
+      40,
+    );
+  }
+
   function openTreeAccessDialog() {
+    treeJoinVisible = false;
     treeCodeInput.value = "";
     treeAccessError.textContent = "";
+    resetDestroyTreeControl();
     updateTreeAccessSummary();
     treeAccessDialog.classList.add("is-open");
     treeAccessDialog.setAttribute("aria-hidden", "false");
-    window.setTimeout(() => treeCodeInput.focus(), 80);
+    window.setTimeout(() => (ownerTreeCode ? openOwnTreeButton : treeNameInput).focus(), 80);
   }
 
   function closeTreeAccessDialog() {
@@ -1473,6 +1504,84 @@
       document.execCommand("copy");
       treeAccessError.textContent = t("treeCodeCopied");
     }
+  }
+
+  function ownerTokensForTree(code) {
+    const notes =
+      code === currentPrivateCode ? privateTreeNotes : localPrivateTrees[code] || [];
+    return [
+      ...new Set(
+        [...notes]
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map((note) => ownedOrangeTokens[note.id])
+          .filter(Boolean),
+      ),
+    ];
+  }
+
+  async function destroyPrivateTree() {
+    if (!ownerTreeCode) return;
+    if (!destroyPrivateTreeButton.classList.contains("is-confirming")) {
+      window.clearTimeout(destroyTreeConfirmTimer);
+      destroyPrivateTreeButton.classList.add("is-confirming");
+      destroyPrivateTreeButton.textContent = t("confirmDestroyTree");
+      destroyTreeConfirmTimer = window.setTimeout(resetDestroyTreeControl, 4200);
+      return;
+    }
+
+    resetDestroyTreeControl();
+    const code = ownerTreeCode;
+    const notes = [...(localPrivateTrees[code] || [])];
+    const tokenCandidates = ownerTokensForTree(code);
+    const sharedTokens = tokenCandidates.filter((token) => token !== "local");
+    if (!tokenCandidates.length) {
+      treeAccessError.textContent = t("treeOwnerMissing");
+      return;
+    }
+
+    destroyPrivateTreeButton.disabled = true;
+    let remoteDeleted = false;
+    let deletionError = null;
+    for (const token of sharedTokens) {
+      try {
+        await apiRequest(`/api/trees/${encodeURIComponent(code)}`, {
+          method: "DELETE",
+          body: JSON.stringify({ ownerToken: token }),
+        });
+        remoteDeleted = true;
+        break;
+      } catch (error) {
+        deletionError = error;
+        if (error.status === 404) {
+          remoteDeleted = true;
+          break;
+        }
+        if (error.status !== 403) break;
+      }
+    }
+
+    const hasLocalOwner = tokenCandidates.includes("local");
+    if (sharedTokens.length && !remoteDeleted && !hasLocalOwner) {
+      destroyPrivateTreeButton.disabled = false;
+      treeAccessError.textContent =
+        deletionError?.status === 403 ? t("treeDestroyDenied") : t("treeDestroyFailed");
+      return;
+    }
+
+    notes.forEach((note) => delete ownedOrangeTokens[note.id]);
+    delete localPrivateTrees[code];
+    saveLocalPrivateTrees();
+    saveOwnedOrangeTokens();
+    ownerTreeCode = "";
+    saveOwnerTreeCode();
+    updateTreeAccessSummary();
+    destroyPrivateTreeButton.disabled = false;
+
+    if (currentPrivateCode === code) {
+      backToMainTree();
+    }
+    treeAccessError.textContent = t("treeDestroyed");
+    setLog(`tree.destroy // #${code} // private`);
   }
 
   function openGuideDialog() {
@@ -2029,12 +2138,14 @@
   returnMainButton.addEventListener("click", backToMainTree);
   closeTreeAccessButton.addEventListener("click", closeTreeAccessDialog);
   treeAccessDialog.querySelector("[data-close-tree-access]").addEventListener("click", closeTreeAccessDialog);
+  toggleTreeJoinButton.addEventListener("click", toggleTreeJoin);
   enterTreeButton.addEventListener("click", enterPrivateTreeFromInput);
   createTreeButton.addEventListener("click", createMyPrivateTree);
   openOwnTreeButton.addEventListener("click", () => {
     if (ownerTreeCode) openPrivateTree(ownerTreeCode);
   });
   copyTreeCodeButton.addEventListener("click", copyOwnerTreeCode);
+  destroyPrivateTreeButton.addEventListener("click", destroyPrivateTree);
   treeCodeInput.addEventListener("input", () => {
     treeCodeInput.value = treeCodeInput.value.replace(/\D/g, "").slice(0, 6);
     treeAccessError.textContent = "";

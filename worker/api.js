@@ -268,6 +268,44 @@ async function deleteOrange(request, env, orangeId) {
   return json({ ok: true, id: orangeId });
 }
 
+async function deletePrivateTree(request, env, treeCode) {
+  if (!/^\d{6}$/.test(treeCode)) {
+    return error("Tree code must contain six digits", 400);
+  }
+  if (!(await rateLimit(request, env, "tree-delete", 3, 60))) {
+    return error("Too many requests. Please try again later.", 429);
+  }
+  const body = await readBody(request);
+  if (body.error) return error(body.error, body.status);
+  const ownerToken = String(body.payload.ownerToken || "");
+  if (!ownerToken) return error("Owner token is required", 400);
+
+  const tree = await env.DB.prepare("SELECT code FROM trees WHERE code = ?")
+    .bind(Number(treeCode))
+    .first();
+  if (!tree) return error("Tree not found", 404);
+
+  const firstOrange = await env.DB.prepare(
+    "SELECT owner_token FROM oranges WHERE seed = ? ORDER BY created_at ASC, rowid ASC LIMIT 1",
+  )
+    .bind(Number(treeCode))
+    .first();
+  if (!firstOrange) return error("Tree owner record not found", 404);
+  if (ownerToken !== firstOrange.owner_token) {
+    return error("Only the tree owner can destroy this tree", 403);
+  }
+
+  await env.DB.batch([
+    env.DB.prepare(
+      "DELETE FROM replies WHERE orange_id IN (SELECT id FROM oranges WHERE seed = ?)",
+    ).bind(Number(treeCode)),
+    env.DB.prepare("DELETE FROM oranges WHERE seed = ?").bind(Number(treeCode)),
+    env.DB.prepare("DELETE FROM trees WHERE code = ?").bind(Number(treeCode)),
+  ]);
+
+  return json({ ok: true, code: treeCode });
+}
+
 export async function handleApi({ request, env }) {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -295,6 +333,11 @@ export async function handleApi({ request, env }) {
     const itemMatch = path.match(/^\/api\/oranges\/([A-Za-z0-9-]+)$/);
     if (request.method === "DELETE" && itemMatch) {
       return deleteOrange(request, env, itemMatch[1]);
+    }
+
+    const treeMatch = path.match(/^\/api\/trees\/(\d{6})$/);
+    if (request.method === "DELETE" && treeMatch) {
+      return deletePrivateTree(request, env, treeMatch[1]);
     }
     return error("API route not found", 404);
   } catch (err) {

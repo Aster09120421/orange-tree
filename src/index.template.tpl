@@ -550,7 +550,10 @@
             <p class="tree-access-description" data-i18n="treeDialogDescription">
               每棵个人橘树都有六位编号。输入编号即可查看留言并回复。
             </p>
-            <div class="tree-access-section">
+            <button class="tree-mode-toggle" id="toggleTreeJoinButton" type="button" data-i18n="showJoinTree">
+              已有编号？进入朋友的橘树
+            </button>
+            <div class="tree-access-section" id="treeJoinSection" hidden>
               <div class="tree-section-heading">
                 <span data-i18n="joinExistingTree">进入已有橘树</span>
                 <b>JOIN</b>
@@ -576,6 +579,9 @@
               <div>
                 <button id="openOwnTreeButton" type="button" data-i18n="enterMyTree">进入我的树</button>
                 <button id="copyTreeCodeButton" type="button" data-i18n="copyCode">复制编号</button>
+                <button class="tree-destroy-button" id="destroyPrivateTreeButton" type="button" data-i18n="destroyTree">
+                  销毁这棵树
+                </button>
               </div>
             </div>
             <div class="tree-create-section" id="treeCreateSection">
@@ -611,6 +617,7 @@
               <button class="tree-create-button" id="createTreeButton" type="button" data-i18n="createTree">
                 种下我的橘树
               </button>
+              <p class="tree-create-hint" data-i18n="treeCodeAuto">六位访问编号会在创建后自动生成。</p>
             </div>
           </div>
         </section>
