@@ -1,3 +1,5 @@
 orange-data.json
 orange-data.tmp
 __pycache__/
+.DS_Store
+上传橘子/
