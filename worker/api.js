@@ -1,10 +1,8 @@
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",
+  "X-Robots-Tag": "noindex, nofollow",
 };
 
 function json(payload, status = 200) {
@@ -34,12 +32,69 @@ function isPrivateTreeSeed(value) {
 }
 
 async function readBody(request) {
-  try {
-    const payload = await request.json();
-    return payload && typeof payload === "object" ? payload : null;
-  } catch {
-    return null;
+  const contentLength = Number(request.headers.get("Content-Length") || 0);
+  if (contentLength > 8192) {
+    return { error: "Request body is too large", status: 413 };
   }
+  const contentType = request.headers.get("Content-Type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return { error: "Content-Type must be application/json", status: 415 };
+  }
+  const raw = await request.text();
+  if (new TextEncoder().encode(raw).byteLength > 8192) {
+    return { error: "Request body is too large", status: 413 };
+  }
+  try {
+    const payload = JSON.parse(raw);
+    return payload && typeof payload === "object"
+      ? { payload }
+      : { error: "JSON object required", status: 400 };
+  } catch {
+    return { error: "Invalid JSON", status: 400 };
+  }
+}
+
+function sameOrigin(request) {
+  const origin = request.headers.get("Origin");
+  return !origin || origin === new URL(request.url).origin;
+}
+
+async function clientKey(request, scope, windowSeconds) {
+  const forwarded = request.headers.get("X-Forwarded-For") || "";
+  const address =
+    request.headers.get("CF-Connecting-IP") ||
+    forwarded.split(",")[0].trim() ||
+    "unknown";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${address}|orange-tree|${scope}`),
+  );
+  const hash = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 24);
+  const bucket = Math.floor(Date.now() / (windowSeconds * 1000));
+  return `${scope}:${hash}:${bucket}`;
+}
+
+async function rateLimit(request, env, scope, limit, windowSeconds = 60) {
+  const key = await clientKey(request, scope, windowSeconds);
+  const expiresAt = Math.floor(Date.now() / 1000) + windowSeconds * 3;
+  await env.DB.prepare(
+    "INSERT INTO rate_limits (key, count, expires_at) VALUES (?, 1, ?) " +
+      "ON CONFLICT(key) DO UPDATE SET count = rate_limits.count + 1",
+  )
+    .bind(key, expiresAt)
+    .run();
+  const row = await env.DB.prepare("SELECT count FROM rate_limits WHERE key = ?")
+    .bind(key)
+    .first();
+  if (Math.random() < 0.02) {
+    await env.DB.prepare("DELETE FROM rate_limits WHERE expires_at < ?")
+      .bind(Math.floor(Date.now() / 1000))
+      .run();
+  }
+  return (row?.count || 1) <= limit;
 }
 
 function mapOrange(row, replies = []) {
@@ -79,6 +134,9 @@ async function listOranges(request, env) {
   let statement;
   if (rawTree) {
     if (!/^\d{6}$/.test(rawTree)) return error("Tree code must contain six digits", 400);
+    if (!(await rateLimit(request, env, "tree-read", 18, 60))) {
+      return error("Too many requests. Please try again later.", 429);
+    }
     statement = env.DB.prepare(
       "SELECT * FROM oranges WHERE seed = ? ORDER BY created_at ASC LIMIT 200",
     ).bind(Number(rawTree));
@@ -92,8 +150,12 @@ async function listOranges(request, env) {
 }
 
 async function createOrange(request, env) {
-  const payload = await readBody(request);
-  if (!payload) return error("Invalid JSON", 400);
+  if (!(await rateLimit(request, env, "orange-create", 8, 60))) {
+    return error("Too many requests. Please try again later.", 429);
+  }
+  const body = await readBody(request);
+  if (body.error) return error(body.error, body.status);
+  const payload = body.payload;
 
   const text = clean(payload.text, 48);
   const author = clean(payload.author, 16);
@@ -155,8 +217,12 @@ async function createOrange(request, env) {
 }
 
 async function addReply(request, env, orangeId) {
-  const payload = await readBody(request);
-  if (!payload) return error("Invalid JSON", 400);
+  if (!(await rateLimit(request, env, "reply-create", 16, 60))) {
+    return error("Too many requests. Please try again later.", 429);
+  }
+  const body = await readBody(request);
+  if (body.error) return error(body.error, body.status);
+  const payload = body.payload;
   const text = clean(payload.text, 64);
   const author = clean(payload.author, 16);
   if (!text) return error("Reply text is required", 400);
@@ -184,8 +250,12 @@ async function addReply(request, env, orangeId) {
 }
 
 async function deleteOrange(request, env, orangeId) {
-  const payload = await readBody(request);
-  if (!payload) return error("Invalid JSON", 400);
+  if (!(await rateLimit(request, env, "orange-delete", 10, 60))) {
+    return error("Too many requests. Please try again later.", 429);
+  }
+  const body = await readBody(request);
+  if (body.error) return error(body.error, body.status);
+  const payload = body.payload;
   const ownerToken = String(payload.ownerToken || "");
   const orange = await env.DB.prepare("SELECT owner_token FROM oranges WHERE id = ?")
     .bind(orangeId)
@@ -206,6 +276,9 @@ export async function handleApi({ request, env }) {
 
   const path = new URL(request.url).pathname.replace(/\/+$/, "");
   try {
+    if (request.method !== "GET" && !sameOrigin(request)) {
+      return error("Cross-origin write blocked", 403);
+    }
     if (request.method === "GET" && path === "/api/health") {
       return json({ ok: true });
     }

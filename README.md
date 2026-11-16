@@ -77,6 +77,8 @@ python3 build_single_file.py
 
 免费长期在线方案使用 Cloudflare Worker、Static Assets 和 D1。完整的数据库初始化、Worker 配置和部署步骤见 [CLOUDFLARE_DEPLOY.md](./CLOUDFLARE_DEPLOY.md)。
 
+应用层限流、CSP、同源写入保护和 D1 安全说明见 [SECURITY.md](./SECURITY.md)。
+
 ## 不部署公网服务器时如何跨网络
 
 纯静态 HTML 无法让不同设备共享写入数据。如果不购买云服务器，可以使用以下方式：
