@@ -548,8 +548,41 @@
             <p class="plant-index">ORANGE_TREE_SPACES</p>
             <h2 id="treeAccessTitle" data-i18n="treeDialogTitle">进入一棵私密橘树。</h2>
             <p class="tree-access-description" data-i18n="treeDialogDescription">
-              每棵个人橘树都有六位编号。输入编号即可查看留言并回复。
+              创建时无需填写编号，系统会自动生成随机六位编号；输入朋友分享的编号可进入已有私密树。
             </p>
+            <section class="tree-account-card" aria-labelledby="treeAccountTitle">
+              <div class="tree-section-heading">
+                <span id="treeAccountTitle" data-i18n="anonymousAccount">匿名账号</span>
+                <b>ANON</b>
+              </div>
+              <p class="tree-account-status" id="treeAccountStatus" data-i18n="accountAutoCreate">
+                首次创建私密树时会自动生成账号和恢复码。
+              </p>
+              <code class="tree-account-code" id="treeAccountCode" hidden></code>
+              <div class="tree-account-actions">
+                <button id="copyAccountCodeButton" type="button" data-i18n="copyRecoveryCode" hidden>
+                  复制恢复码
+                </button>
+                <button id="toggleAccountRecoveryButton" type="button" data-i18n="showAccountRecovery">
+                  已有恢复码？恢复账号
+                </button>
+              </div>
+              <div class="tree-account-recovery" id="accountRecoverySection" hidden>
+                <label for="accountRecoveryInput" data-i18n="accountRecoveryLabel">账号恢复码</label>
+                <input
+                  id="accountRecoveryInput"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                  data-i18n-placeholder="accountRecoveryPlaceholder"
+                />
+                <button id="recoverAccountButton" type="button" data-i18n="recoverAccount">
+                  恢复匿名账号
+                </button>
+                <p class="tree-access-error" id="accountRecoveryError" role="status" aria-live="polite"></p>
+              </div>
+            </section>
             <button class="tree-mode-toggle" id="toggleTreeJoinButton" type="button" data-i18n="showJoinTree">
               已有编号？进入朋友的橘树
             </button>

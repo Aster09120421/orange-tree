@@ -1905,6 +1905,93 @@ pre {
   line-height: 1.7;
 }
 
+.tree-account-card {
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.tree-account-status {
+  margin: 8px 0 0;
+  color: var(--ink-muted);
+  font-size: 8px;
+  line-height: 1.6;
+}
+
+.tree-account-code {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 8px;
+  padding: 8px 9px;
+  color: var(--amber);
+  background: rgba(255, 255, 255, 0.025);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.tree-account-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tree-account-actions button,
+.tree-account-recovery button {
+  min-height: 32px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+}
+
+.tree-account-actions button {
+  flex: 1;
+}
+
+.tree-account-actions button:hover,
+.tree-account-actions button:focus-visible,
+.tree-account-recovery button:hover,
+.tree-account-recovery button:focus-visible {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.tree-account-recovery {
+  margin-top: 9px;
+}
+
+.tree-account-recovery label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-faint);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
+.tree-account-recovery input {
+  width: 100%;
+  height: 37px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  outline: none;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.016);
+  font-family: var(--mono);
+  font-size: 8px;
+}
+
+.tree-account-recovery input:focus {
+  border-color: var(--amber);
+}
+
+.tree-account-recovery button {
+  width: 100%;
+  margin-top: 7px;
+}
+
 .tree-access-section,
 .tree-create-section,
 .tree-owner-summary {

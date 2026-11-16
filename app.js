@@ -60,6 +60,14 @@
   const returnMainButton = document.querySelector("#returnMainButton");
   const treeAccessDialog = document.querySelector("#treeAccessDialog");
   const closeTreeAccessButton = document.querySelector("#closeTreeAccessButton");
+  const treeAccountStatus = document.querySelector("#treeAccountStatus");
+  const treeAccountCode = document.querySelector("#treeAccountCode");
+  const copyAccountCodeButton = document.querySelector("#copyAccountCodeButton");
+  const toggleAccountRecoveryButton = document.querySelector("#toggleAccountRecoveryButton");
+  const accountRecoverySection = document.querySelector("#accountRecoverySection");
+  const accountRecoveryInput = document.querySelector("#accountRecoveryInput");
+  const recoverAccountButton = document.querySelector("#recoverAccountButton");
+  const accountRecoveryError = document.querySelector("#accountRecoveryError");
   const toggleTreeJoinButton = document.querySelector("#toggleTreeJoinButton");
   const treeJoinSection = document.querySelector("#treeJoinSection");
   const treeCodeInput = document.querySelector("#treeCodeInput");
@@ -226,6 +234,7 @@
   const OWNED_TOKENS_KEY = "orange-tree-owned-oranges-v1";
   const PRIVATE_TREES_KEY = "orange-tree-private-spaces-v1";
   const OWNER_TREE_CODE_KEY = "orange-tree-owner-code-v1";
+  const ANONYMOUS_ACCOUNT_KEY = "orange-tree-anonymous-account-v1";
   const MAX_PERSONAL_NOTES = personalFruitAnchors.length;
 
   const poems = [
@@ -277,6 +286,7 @@
   let currentPrivateCode = "";
   let currentPrivateTreeName = "";
   let ownerTreeCode = loadOwnerTreeCode();
+  let anonymousAccount = loadAnonymousAccount();
   let ownedOrangeTokens = loadOwnedOrangeTokens();
   let activePoemDeck = poetryEntries.slice(0, totalFruit);
   let currentPersonalNote = null;
@@ -284,6 +294,8 @@
   let harvestConfirmTimer = 0;
   let destroyTreeConfirmTimer = 0;
   let treeJoinVisible = false;
+  let accountRecoveryVisible = false;
+  let accountSyncAttempted = false;
   let soundEnabled = false;
   let audioContext = null;
   let ambientMaster = null;
@@ -359,6 +371,8 @@
     });
     resetHarvestControl();
     updateSpaceUI();
+    updateAccountUI();
+    updateTreeAccessSummary();
     if (currentPersonalNote) renderReplyThread(currentPersonalNote);
     try {
       window.localStorage.setItem(languageStorageKey, code);
@@ -458,6 +472,46 @@
     } catch {
       // Tree ownership remains available for the current session.
     }
+  }
+
+  function loadAnonymousAccount() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(ANONYMOUS_ACCOUNT_KEY) || "null");
+      if (!stored?.accountId || !stored?.recoveryCode) return null;
+      return {
+        accountId: String(stored.accountId),
+        recoveryCode: String(stored.recoveryCode),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function saveAnonymousAccount() {
+    try {
+      if (anonymousAccount) {
+        window.localStorage.setItem(
+          ANONYMOUS_ACCOUNT_KEY,
+          JSON.stringify(anonymousAccount),
+        );
+      } else {
+        window.localStorage.removeItem(ANONYMOUS_ACCOUNT_KEY);
+      }
+    } catch {
+      // The account remains available for the current session.
+    }
+  }
+
+  function setAnonymousAccount(account) {
+    anonymousAccount =
+      account?.accountId && account?.recoveryCode
+        ? {
+            accountId: String(account.accountId),
+            recoveryCode: String(account.recoveryCode),
+          }
+        : null;
+    saveAnonymousAccount();
+    updateAccountUI();
   }
 
   function loadLocalPrivateTrees() {
@@ -1258,6 +1312,132 @@
       : "ORANGE_TREE_07 / Parametric Study";
   }
 
+  function updateAccountUI() {
+    const connected = Boolean(anonymousAccount?.recoveryCode);
+    treeAccountStatus.textContent = t(connected ? "accountConnected" : "accountAutoCreate");
+    treeAccountCode.textContent = connected ? anonymousAccount.recoveryCode : "";
+    treeAccountCode.hidden = !connected;
+    copyAccountCodeButton.hidden = !connected;
+    accountRecoverySection.hidden = !accountRecoveryVisible;
+    toggleAccountRecoveryButton.textContent = t(
+      accountRecoveryVisible ? "hideAccountRecovery" : "showAccountRecovery",
+    );
+  }
+
+  function toggleAccountRecovery() {
+    accountRecoveryVisible = !accountRecoveryVisible;
+    accountRecoveryError.textContent = "";
+    updateAccountUI();
+    if (accountRecoveryVisible) {
+      window.setTimeout(() => accountRecoveryInput.focus(), 40);
+    }
+  }
+
+  async function copyAccountCode() {
+    if (!anonymousAccount?.recoveryCode) return;
+    try {
+      await navigator.clipboard.writeText(anonymousAccount.recoveryCode);
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(treeAccountCode);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.execCommand("copy");
+      selection.removeAllRanges();
+    }
+    accountRecoveryError.textContent = t("recoveryCopied");
+  }
+
+  async function ensureAnonymousAccount() {
+    if (anonymousAccount?.recoveryCode) return anonymousAccount;
+    if (!communityApiBase) throw new Error("Community API is not configured");
+    const created = await apiRequest("/api/accounts", { method: "POST" });
+    if (!created?.accountId || !created?.recoveryCode) {
+      throw new Error("Anonymous account response is incomplete");
+    }
+    setAnonymousAccount(created);
+    return anonymousAccount;
+  }
+
+  async function prepareAnonymousAccount() {
+    if (!communityApiBase || accountSyncAttempted) return;
+    if (!anonymousAccount && !ownerTreeCode) return;
+    accountSyncAttempted = true;
+    try {
+      if (!anonymousAccount) await ensureAnonymousAccount();
+      const recovered = await apiRequest("/api/accounts/recover", {
+        method: "POST",
+        body: JSON.stringify({ recoveryCode: anonymousAccount.recoveryCode }),
+      });
+      setAnonymousAccount({
+        accountId: recovered.accountId,
+        recoveryCode: recovered.recoveryCode,
+      });
+      if (recovered.tree?.code) {
+        ownerTreeCode = String(recovered.tree.code);
+        saveOwnerTreeCode();
+      } else if (ownerTreeCode) {
+        const legacyOwnerToken = ownerTokensForTree(ownerTreeCode).find(
+          (token) => token !== "local",
+        );
+        if (legacyOwnerToken) {
+          await apiRequest("/api/accounts/claim-tree", {
+            method: "POST",
+            body: JSON.stringify({
+              recoveryCode: anonymousAccount.recoveryCode,
+              treeCode: ownerTreeCode,
+              legacyOwnerToken,
+            }),
+          });
+        }
+      }
+      updateTreeAccessSummary();
+      updateSpaceUI();
+    } catch (error) {
+      accountRecoveryError.textContent =
+        error.status === 401 ? t("accountRecoveryInvalid") : t("accountSyncFailed");
+    }
+  }
+
+  async function recoverAnonymousAccount() {
+    const recoveryCode = accountRecoveryInput.value.trim();
+    accountRecoveryError.textContent = "";
+    if (!recoveryCode) {
+      accountRecoveryError.textContent = t("accountRecoveryInvalid");
+      return;
+    }
+    recoverAccountButton.disabled = true;
+    accountRecoveryError.textContent = t("accountRecovering");
+    try {
+      const recovered = await apiRequest("/api/accounts/recover", {
+        method: "POST",
+        body: JSON.stringify({ recoveryCode }),
+      });
+      setAnonymousAccount(recovered);
+      if (recovered.tree?.code) {
+        ownerTreeCode = String(recovered.tree.code);
+        saveOwnerTreeCode();
+        accountRecoveryError.textContent = t("accountRecovered");
+      } else {
+        accountRecoveryError.textContent = t("accountNoTree");
+      }
+      accountRecoveryInput.value = "";
+      accountRecoveryVisible = false;
+      updateAccountUI();
+      updateTreeAccessSummary();
+      updateSpaceUI();
+      setLog(`account.recover // ${recovered.accountId.slice(0, 8)} // anonymous`);
+    } catch (error) {
+      accountRecoveryError.textContent =
+        error.status === 401 || error.status === 400
+          ? t("accountRecoveryInvalid")
+          : t("accountRecoveryFailed");
+    } finally {
+      recoverAccountButton.disabled = false;
+    }
+  }
+
   function updateTreeAccessSummary() {
     const hasOwnerTree = Boolean(ownerTreeCode);
     treeOwnerSummary.hidden = !hasOwnerTree;
@@ -1291,13 +1471,18 @@
 
   function openTreeAccessDialog() {
     treeJoinVisible = false;
+    accountRecoveryVisible = false;
     treeCodeInput.value = "";
+    accountRecoveryInput.value = "";
     treeAccessError.textContent = "";
+    accountRecoveryError.textContent = "";
     resetDestroyTreeControl();
+    updateAccountUI();
     updateTreeAccessSummary();
     treeAccessDialog.classList.add("is-open");
     treeAccessDialog.setAttribute("aria-hidden", "false");
     window.setTimeout(() => (ownerTreeCode ? openOwnTreeButton : treeNameInput).focus(), 80);
+    void prepareAnonymousAccount();
   }
 
   function closeTreeAccessDialog() {
@@ -1394,6 +1579,11 @@
     let savedNote = null;
     let shared = false;
     if (communityApiBase) {
+      try {
+        await ensureAnonymousAccount();
+      } catch {
+        // The tree falls back to browser-only storage if the account service is unavailable.
+      }
       for (let attempt = 0; attempt < 12; attempt += 1) {
         const candidate = String(100000 + Math.floor(Math.random() * 900000));
         if (localPrivateTrees[candidate] || candidate === ownerTreeCode) continue;
@@ -1415,6 +1605,7 @@
               author: note.author,
               treeName: note.treeName,
               seed: note.seed,
+              accountRecoveryCode: anonymousAccount?.recoveryCode || "",
             }),
           });
           if (created?.ownerToken) rememberOrangeOwner(created.id, created.ownerToken);
@@ -1534,7 +1725,8 @@
     const notes = [...(localPrivateTrees[code] || [])];
     const tokenCandidates = ownerTokensForTree(code);
     const sharedTokens = tokenCandidates.filter((token) => token !== "local");
-    if (!tokenCandidates.length) {
+    const hasAccount = Boolean(anonymousAccount?.recoveryCode);
+    if (!tokenCandidates.length && !hasAccount) {
       treeAccessError.textContent = t("treeOwnerMissing");
       return;
     }
@@ -1542,11 +1734,17 @@
     destroyPrivateTreeButton.disabled = true;
     let remoteDeleted = false;
     let deletionError = null;
-    for (const token of sharedTokens) {
+    const accountToken = anonymousAccount?.recoveryCode || "";
+    const authorizationTokens = accountToken ? [accountToken, ...sharedTokens] : sharedTokens;
+    for (const token of authorizationTokens) {
       try {
         await apiRequest(`/api/trees/${encodeURIComponent(code)}`, {
           method: "DELETE",
-          body: JSON.stringify({ ownerToken: token }),
+          body: JSON.stringify(
+            token === accountToken
+              ? { accountRecoveryCode: token }
+              : { ownerToken: token },
+          ),
         });
         remoteDeleted = true;
         break;
@@ -1561,7 +1759,7 @@
     }
 
     const hasLocalOwner = tokenCandidates.includes("local");
-    if (sharedTokens.length && !remoteDeleted && !hasLocalOwner) {
+    if ((accountToken || sharedTokens.length) && !remoteDeleted && !hasLocalOwner) {
       destroyPrivateTreeButton.disabled = false;
       treeAccessError.textContent =
         deletionError?.status === 403 ? t("treeDestroyDenied") : t("treeDestroyFailed");
@@ -2138,6 +2336,15 @@
   returnMainButton.addEventListener("click", backToMainTree);
   closeTreeAccessButton.addEventListener("click", closeTreeAccessDialog);
   treeAccessDialog.querySelector("[data-close-tree-access]").addEventListener("click", closeTreeAccessDialog);
+  copyAccountCodeButton.addEventListener("click", copyAccountCode);
+  toggleAccountRecoveryButton.addEventListener("click", toggleAccountRecovery);
+  recoverAccountButton.addEventListener("click", recoverAnonymousAccount);
+  accountRecoveryInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      recoverAnonymousAccount();
+    }
+  });
   toggleTreeJoinButton.addEventListener("click", toggleTreeJoin);
   enterTreeButton.addEventListener("click", enterPrivateTreeFromInput);
   createTreeButton.addEventListener("click", createMyPrivateTree);

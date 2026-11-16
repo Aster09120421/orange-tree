@@ -1918,6 +1918,93 @@ pre {
   line-height: 1.7;
 }
 
+.tree-account-card {
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.tree-account-status {
+  margin: 8px 0 0;
+  color: var(--ink-muted);
+  font-size: 8px;
+  line-height: 1.6;
+}
+
+.tree-account-code {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 8px;
+  padding: 8px 9px;
+  color: var(--amber);
+  background: rgba(255, 255, 255, 0.025);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.tree-account-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tree-account-actions button,
+.tree-account-recovery button {
+  min-height: 32px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+}
+
+.tree-account-actions button {
+  flex: 1;
+}
+
+.tree-account-actions button:hover,
+.tree-account-actions button:focus-visible,
+.tree-account-recovery button:hover,
+.tree-account-recovery button:focus-visible {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.tree-account-recovery {
+  margin-top: 9px;
+}
+
+.tree-account-recovery label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-faint);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
+.tree-account-recovery input {
+  width: 100%;
+  height: 37px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  outline: none;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.016);
+  font-family: var(--mono);
+  font-size: 8px;
+}
+
+.tree-account-recovery input:focus {
+  border-color: var(--amber);
+}
+
+.tree-account-recovery button {
+  width: 100%;
+  margin-top: 7px;
+}
+
 .tree-access-section,
 .tree-create-section,
 .tree-owner-summary {
@@ -3884,8 +3971,41 @@ blockquote {
             <p class="plant-index">ORANGE_TREE_SPACES</p>
             <h2 id="treeAccessTitle" data-i18n="treeDialogTitle">进入一棵私密橘树。</h2>
             <p class="tree-access-description" data-i18n="treeDialogDescription">
-              每棵个人橘树都有六位编号。输入编号即可查看留言并回复。
+              创建时无需填写编号，系统会自动生成随机六位编号；输入朋友分享的编号可进入已有私密树。
             </p>
+            <section class="tree-account-card" aria-labelledby="treeAccountTitle">
+              <div class="tree-section-heading">
+                <span id="treeAccountTitle" data-i18n="anonymousAccount">匿名账号</span>
+                <b>ANON</b>
+              </div>
+              <p class="tree-account-status" id="treeAccountStatus" data-i18n="accountAutoCreate">
+                首次创建私密树时会自动生成账号和恢复码。
+              </p>
+              <code class="tree-account-code" id="treeAccountCode" hidden></code>
+              <div class="tree-account-actions">
+                <button id="copyAccountCodeButton" type="button" data-i18n="copyRecoveryCode" hidden>
+                  复制恢复码
+                </button>
+                <button id="toggleAccountRecoveryButton" type="button" data-i18n="showAccountRecovery">
+                  已有恢复码？恢复账号
+                </button>
+              </div>
+              <div class="tree-account-recovery" id="accountRecoverySection" hidden>
+                <label for="accountRecoveryInput" data-i18n="accountRecoveryLabel">账号恢复码</label>
+                <input
+                  id="accountRecoveryInput"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                  data-i18n-placeholder="accountRecoveryPlaceholder"
+                />
+                <button id="recoverAccountButton" type="button" data-i18n="recoverAccount">
+                  恢复匿名账号
+                </button>
+                <p class="tree-access-error" id="accountRecoveryError" role="status" aria-live="polite"></p>
+              </div>
+            </section>
             <button class="tree-mode-toggle" id="toggleTreeJoinButton" type="button" data-i18n="showJoinTree">
               已有编号？进入朋友的橘树
             </button>
@@ -4025,6 +4145,22 @@ blockquote {
       treeSpace: "我的橘树",
       treeDialogTitle: "进入一棵私密橘树。",
       treeDialogDescription: "创建时无需填写编号，系统会自动生成随机六位编号；输入朋友分享的编号可进入已有私密树。",
+      anonymousAccount: "匿名账号",
+      accountAutoCreate: "首次创建私密树时会自动生成账号与恢复码。请妥善保存恢复码，清除浏览器数据后需要它。",
+      accountConnected: "匿名账号已连接。恢复码可跨浏览器恢复树主人身份。",
+      copyRecoveryCode: "复制恢复码",
+      recoveryCopied: "恢复码已复制，请妥善保存。",
+      showAccountRecovery: "已有恢复码？恢复账号",
+      hideAccountRecovery: "收起账号恢复",
+      accountRecoveryLabel: "账号恢复码",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "恢复匿名账号",
+      accountRecovering: "正在验证恢复码……",
+      accountRecovered: "账号已恢复，私密树主人身份已找回。",
+      accountRecoveryInvalid: "恢复码无效，请检查后重试。",
+      accountRecoveryFailed: "暂时无法恢复账号，请稍后重试。",
+      accountNoTree: "账号已恢复，但该账号目前没有关联私密树。",
+      accountSyncFailed: "账号已保存在本机，但暂时无法与服务器同步。",
       joinExistingTree: "进入已有橘树",
       showJoinTree: "已有编号？进入朋友的橘树",
       hideJoinTree: "返回种一棵自己的橘树",
@@ -4105,6 +4241,22 @@ blockquote {
       treeSpace: "My tree",
       treeDialogTitle: "Enter a private orange tree.",
       treeDialogDescription: "Choose a name and first message. A random six-digit code is created automatically. Use a friend's code to enter their tree.",
+      anonymousAccount: "Anonymous account",
+      accountAutoCreate: "An account and recovery code are created with your first private tree. Save the recovery code; you will need it after clearing browser data.",
+      accountConnected: "Anonymous account connected. The recovery code restores tree ownership in another browser.",
+      copyRecoveryCode: "Copy recovery code",
+      recoveryCopied: "Recovery code copied. Keep it safe.",
+      showAccountRecovery: "Have a recovery code? Restore account",
+      hideAccountRecovery: "Hide account recovery",
+      accountRecoveryLabel: "Account recovery code",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "Restore anonymous account",
+      accountRecovering: "Checking recovery code…",
+      accountRecovered: "Account restored. Private-tree ownership is available again.",
+      accountRecoveryInvalid: "The recovery code is invalid. Check it and try again.",
+      accountRecoveryFailed: "Could not restore the account. Try again later.",
+      accountNoTree: "The account was restored, but it has no linked private tree.",
+      accountSyncFailed: "The account is saved in this browser, but it could not sync with the server.",
       joinExistingTree: "Enter an existing tree",
       showJoinTree: "Have a code? Enter a friend's tree",
       hideJoinTree: "Back to planting a private tree",
@@ -4185,6 +4337,22 @@ blockquote {
       treeSpace: "私の木",
       treeDialogTitle: "プライベートなオレンジの木へ。",
       treeDialogDescription: "木の名前と最初のメッセージを決めると、六桁の番号が自動で作られます。友人の番号を入力すると、その木を訪ねられます。",
+      anonymousAccount: "匿名アカウント",
+      accountAutoCreate: "最初のプライベートツリーを作ると、アカウントと復元コードが自動生成されます。ブラウザデータを消した場合に必要なので保管してください。",
+      accountConnected: "匿名アカウントに接続しています。復元コードで別のブラウザでも木の所有者身分を復元できます。",
+      copyRecoveryCode: "復元コードをコピー",
+      recoveryCopied: "復元コードをコピーしました。大切に保管してください。",
+      showAccountRecovery: "復元コードがある場合",
+      hideAccountRecovery: "アカウント復元を閉じる",
+      accountRecoveryLabel: "アカウント復元コード",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "匿名アカウントを復元",
+      accountRecovering: "復元コードを確認しています…",
+      accountRecovered: "アカウントを復元し、木の所有者身分を取り戻しました。",
+      accountRecoveryInvalid: "復元コードが正しくありません。",
+      accountRecoveryFailed: "アカウントを復元できません。後でもう一度お試しください。",
+      accountNoTree: "アカウントは復元されましたが、関連する木がありません。",
+      accountSyncFailed: "アカウントはこのブラウザに保存されていますが、サーバーと同期できません。",
       joinExistingTree: "既存の木に入る",
       showJoinTree: "番号をお持ちですか？友人の木へ",
       hideJoinTree: "自分の木を植える",
@@ -4265,6 +4433,22 @@ blockquote {
       treeSpace: "내 나무",
       treeDialogTitle: "비공개 오렌지 나무로 들어가기.",
       treeDialogDescription: "이름과 첫 메시지를 정하면 6자리 번호가 자동으로 생성됩니다. 친구의 번호를 입력하면 그 나무를 방문할 수 있습니다.",
+      anonymousAccount: "익명 계정",
+      accountAutoCreate: "첫 비공개 나무를 만들면 계정과 복구 코드가 자동 생성됩니다. 브라우저 데이터를 삭제한 뒤 필요하므로 안전하게 보관하세요.",
+      accountConnected: "익명 계정이 연결되었습니다. 복구 코드로 다른 브라우저에서도 나무 소유자 신분을 복원할 수 있습니다.",
+      copyRecoveryCode: "복구 코드 복사",
+      recoveryCopied: "복구 코드를 복사했습니다. 안전하게 보관하세요.",
+      showAccountRecovery: "복구 코드가 있나요? 계정 복원",
+      hideAccountRecovery: "계정 복원 닫기",
+      accountRecoveryLabel: "계정 복구 코드",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "익명 계정 복원",
+      accountRecovering: "복구 코드를 확인하는 중…",
+      accountRecovered: "계정을 복원하고 나무 소유자 신분을 되찾았습니다.",
+      accountRecoveryInvalid: "복구 코드가 올바르지 않습니다.",
+      accountRecoveryFailed: "계정을 복원하지 못했습니다. 잠시 후 다시 시도하세요.",
+      accountNoTree: "계정은 복원되었지만 연결된 비공개 나무가 없습니다.",
+      accountSyncFailed: "계정은 이 브라우저에 저장되었지만 서버와 동기화할 수 없습니다.",
       joinExistingTree: "기존 나무 들어가기",
       showJoinTree: "번호가 있나요? 친구의 나무로",
       hideJoinTree: "내 나무 심기로 돌아가기",
@@ -4345,6 +4529,22 @@ blockquote {
       treeSpace: "Mi árbol",
       treeDialogTitle: "Entrar en un naranjo privado.",
       treeDialogDescription: "Elige un nombre y el primer mensaje. El código de seis dígitos se genera automáticamente. Usa el código de un amigo para visitar su árbol.",
+      anonymousAccount: "Cuenta anónima",
+      accountAutoCreate: "La cuenta y el código de recuperación se crean con tu primer árbol privado. Guarda el código; lo necesitarás si borras los datos del navegador.",
+      accountConnected: "Cuenta anónima conectada. El código de recuperación restaura la propiedad del árbol en otro navegador.",
+      copyRecoveryCode: "Copiar código de recuperación",
+      recoveryCopied: "Código de recuperación copiado. Guárdalo en un lugar seguro.",
+      showAccountRecovery: "¿Tienes un código? Restaurar cuenta",
+      hideAccountRecovery: "Ocultar recuperación de cuenta",
+      accountRecoveryLabel: "Código de recuperación",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "Restaurar cuenta anónima",
+      accountRecovering: "Comprobando el código…",
+      accountRecovered: "Cuenta restaurada. Ya puedes recuperar la propiedad del árbol privado.",
+      accountRecoveryInvalid: "El código de recuperación no es válido.",
+      accountRecoveryFailed: "No se pudo restaurar la cuenta. Inténtalo más tarde.",
+      accountNoTree: "La cuenta se restauró, pero no tiene un árbol privado vinculado.",
+      accountSyncFailed: "La cuenta está guardada en este navegador, pero no se pudo sincronizar con el servidor.",
       joinExistingTree: "Entrar en un árbol existente",
       showJoinTree: "¿Tienes un código? Entra en el árbol de un amigo",
       hideJoinTree: "Volver a plantar un árbol privado",
@@ -4425,6 +4625,22 @@ blockquote {
       treeSpace: "Mon arbre",
       treeDialogTitle: "Entrer dans un oranger privé.",
       treeDialogDescription: "Choisissez un nom et un premier message. Un code aléatoire à six chiffres est créé automatiquement. Utilisez le code d'un ami pour visiter son arbre.",
+      anonymousAccount: "Compte anonyme",
+      accountAutoCreate: "Le compte et le code de récupération sont créés avec votre premier arbre privé. Conservez ce code : il sera nécessaire après l'effacement des données du navigateur.",
+      accountConnected: "Compte anonyme connecté. Le code de récupération restaure la propriété de l'arbre dans un autre navigateur.",
+      copyRecoveryCode: "Copier le code de récupération",
+      recoveryCopied: "Code de récupération copié. Conservez-le précieusement.",
+      showAccountRecovery: "Vous avez un code ? Restaurer le compte",
+      hideAccountRecovery: "Masquer la récupération du compte",
+      accountRecoveryLabel: "Code de récupération du compte",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "Restaurer le compte anonyme",
+      accountRecovering: "Vérification du code…",
+      accountRecovered: "Compte restauré. La propriété de l'arbre privé est de nouveau disponible.",
+      accountRecoveryInvalid: "Le code de récupération est invalide.",
+      accountRecoveryFailed: "Impossible de restaurer le compte. Réessayez plus tard.",
+      accountNoTree: "Le compte a été restauré, mais aucun arbre privé n'y est associé.",
+      accountSyncFailed: "Le compte est enregistré dans ce navigateur, mais la synchronisation avec le serveur a échoué.",
       joinExistingTree: "Entrer dans un arbre existant",
       showJoinTree: "Vous avez un code ? Entrez dans l'arbre d'un ami",
       hideJoinTree: "Revenir à la création d'un arbre privé",
@@ -4505,6 +4721,22 @@ blockquote {
       treeSpace: "Mein Baum",
       treeDialogTitle: "Einen privaten Orangenbaum betreten.",
       treeDialogDescription: "Wähle einen Namen und die erste Nachricht. Ein zufälliger sechsstelliger Code wird automatisch erstellt. Mit dem Code eines Freundes kannst du dessen Baum besuchen.",
+      anonymousAccount: "Anonymes Konto",
+      accountAutoCreate: "Konto und Wiederherstellungscode werden beim ersten privaten Baum automatisch erstellt. Speichere den Code; du brauchst ihn nach dem Löschen der Browserdaten.",
+      accountConnected: "Anonymes Konto verbunden. Der Wiederherstellungscode stellt die Baumeigentümerschaft in einem anderen Browser wieder her.",
+      copyRecoveryCode: "Wiederherstellungscode kopieren",
+      recoveryCopied: "Wiederherstellungscode kopiert. Bewahre ihn sicher auf.",
+      showAccountRecovery: "Hast du einen Code? Konto wiederherstellen",
+      hideAccountRecovery: "Kontowiederherstellung schließen",
+      accountRecoveryLabel: "Konto-Wiederherstellungscode",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "Anonymes Konto wiederherstellen",
+      accountRecovering: "Wiederherstellungscode wird geprüft…",
+      accountRecovered: "Konto wiederhergestellt. Die Eigentümerschaft des privaten Baums ist wieder verfügbar.",
+      accountRecoveryInvalid: "Der Wiederherstellungscode ist ungültig.",
+      accountRecoveryFailed: "Das Konto konnte nicht wiederhergestellt werden. Versuche es später erneut.",
+      accountNoTree: "Das Konto wurde wiederhergestellt, ist aber mit keinem privaten Baum verbunden.",
+      accountSyncFailed: "Das Konto ist in diesem Browser gespeichert, konnte aber nicht mit dem Server synchronisiert werden.",
       joinExistingTree: "Bestehenden Baum betreten",
       showJoinTree: "Hast du einen Code? Baum eines Freundes öffnen",
       hideJoinTree: "Zurück zum Anlegen eines privaten Baums",
@@ -4585,6 +4817,22 @@ blockquote {
       treeSpace: "Моё дерево",
       treeDialogTitle: "Войти в личное апельсиновое дерево.",
       treeDialogDescription: "Выберите название и первое сообщение — случайный шестизначный код создастся автоматически. Код друга позволит зайти в его дерево.",
+      anonymousAccount: "Анонимный аккаунт",
+      accountAutoCreate: "Аккаунт и код восстановления создаются вместе с первым личным деревом. Сохраните код — он понадобится после очистки данных браузера.",
+      accountConnected: "Анонимный аккаунт подключён. Код восстановления вернёт права владельца дерева в другом браузере.",
+      copyRecoveryCode: "Копировать код восстановления",
+      recoveryCopied: "Код восстановления скопирован. Надёжно сохраните его.",
+      showAccountRecovery: "Есть код? Восстановить аккаунт",
+      hideAccountRecovery: "Скрыть восстановление аккаунта",
+      accountRecoveryLabel: "Код восстановления аккаунта",
+      accountRecoveryPlaceholder: "OT-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+      recoverAccount: "Восстановить анонимный аккаунт",
+      accountRecovering: "Проверяем код восстановления…",
+      accountRecovered: "Аккаунт восстановлен. Права владельца личного дерева снова доступны.",
+      accountRecoveryInvalid: "Код восстановления недействителен.",
+      accountRecoveryFailed: "Не удалось восстановить аккаунт. Повторите попытку позже.",
+      accountNoTree: "Аккаунт восстановлен, но с ним не связано личное дерево.",
+      accountSyncFailed: "Аккаунт сохранён в этом браузере, но синхронизация с сервером не удалась.",
       joinExistingTree: "Войти в существующее дерево",
       showJoinTree: "Есть код? Войти в дерево друга",
       hideJoinTree: "Вернуться к созданию личного дерева",
@@ -5064,6 +5312,14 @@ blockquote {
   const returnMainButton = document.querySelector("#returnMainButton");
   const treeAccessDialog = document.querySelector("#treeAccessDialog");
   const closeTreeAccessButton = document.querySelector("#closeTreeAccessButton");
+  const treeAccountStatus = document.querySelector("#treeAccountStatus");
+  const treeAccountCode = document.querySelector("#treeAccountCode");
+  const copyAccountCodeButton = document.querySelector("#copyAccountCodeButton");
+  const toggleAccountRecoveryButton = document.querySelector("#toggleAccountRecoveryButton");
+  const accountRecoverySection = document.querySelector("#accountRecoverySection");
+  const accountRecoveryInput = document.querySelector("#accountRecoveryInput");
+  const recoverAccountButton = document.querySelector("#recoverAccountButton");
+  const accountRecoveryError = document.querySelector("#accountRecoveryError");
   const toggleTreeJoinButton = document.querySelector("#toggleTreeJoinButton");
   const treeJoinSection = document.querySelector("#treeJoinSection");
   const treeCodeInput = document.querySelector("#treeCodeInput");
@@ -5230,6 +5486,7 @@ blockquote {
   const OWNED_TOKENS_KEY = "orange-tree-owned-oranges-v1";
   const PRIVATE_TREES_KEY = "orange-tree-private-spaces-v1";
   const OWNER_TREE_CODE_KEY = "orange-tree-owner-code-v1";
+  const ANONYMOUS_ACCOUNT_KEY = "orange-tree-anonymous-account-v1";
   const MAX_PERSONAL_NOTES = personalFruitAnchors.length;
 
   const poems = [
@@ -5281,6 +5538,7 @@ blockquote {
   let currentPrivateCode = "";
   let currentPrivateTreeName = "";
   let ownerTreeCode = loadOwnerTreeCode();
+  let anonymousAccount = loadAnonymousAccount();
   let ownedOrangeTokens = loadOwnedOrangeTokens();
   let activePoemDeck = poetryEntries.slice(0, totalFruit);
   let currentPersonalNote = null;
@@ -5288,6 +5546,8 @@ blockquote {
   let harvestConfirmTimer = 0;
   let destroyTreeConfirmTimer = 0;
   let treeJoinVisible = false;
+  let accountRecoveryVisible = false;
+  let accountSyncAttempted = false;
   let soundEnabled = false;
   let audioContext = null;
   let ambientMaster = null;
@@ -5363,6 +5623,8 @@ blockquote {
     });
     resetHarvestControl();
     updateSpaceUI();
+    updateAccountUI();
+    updateTreeAccessSummary();
     if (currentPersonalNote) renderReplyThread(currentPersonalNote);
     try {
       window.localStorage.setItem(languageStorageKey, code);
@@ -5462,6 +5724,46 @@ blockquote {
     } catch {
       // Tree ownership remains available for the current session.
     }
+  }
+
+  function loadAnonymousAccount() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(ANONYMOUS_ACCOUNT_KEY) || "null");
+      if (!stored?.accountId || !stored?.recoveryCode) return null;
+      return {
+        accountId: String(stored.accountId),
+        recoveryCode: String(stored.recoveryCode),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function saveAnonymousAccount() {
+    try {
+      if (anonymousAccount) {
+        window.localStorage.setItem(
+          ANONYMOUS_ACCOUNT_KEY,
+          JSON.stringify(anonymousAccount),
+        );
+      } else {
+        window.localStorage.removeItem(ANONYMOUS_ACCOUNT_KEY);
+      }
+    } catch {
+      // The account remains available for the current session.
+    }
+  }
+
+  function setAnonymousAccount(account) {
+    anonymousAccount =
+      account?.accountId && account?.recoveryCode
+        ? {
+            accountId: String(account.accountId),
+            recoveryCode: String(account.recoveryCode),
+          }
+        : null;
+    saveAnonymousAccount();
+    updateAccountUI();
   }
 
   function loadLocalPrivateTrees() {
@@ -6262,6 +6564,132 @@ blockquote {
       : "ORANGE_TREE_07 / Parametric Study";
   }
 
+  function updateAccountUI() {
+    const connected = Boolean(anonymousAccount?.recoveryCode);
+    treeAccountStatus.textContent = t(connected ? "accountConnected" : "accountAutoCreate");
+    treeAccountCode.textContent = connected ? anonymousAccount.recoveryCode : "";
+    treeAccountCode.hidden = !connected;
+    copyAccountCodeButton.hidden = !connected;
+    accountRecoverySection.hidden = !accountRecoveryVisible;
+    toggleAccountRecoveryButton.textContent = t(
+      accountRecoveryVisible ? "hideAccountRecovery" : "showAccountRecovery",
+    );
+  }
+
+  function toggleAccountRecovery() {
+    accountRecoveryVisible = !accountRecoveryVisible;
+    accountRecoveryError.textContent = "";
+    updateAccountUI();
+    if (accountRecoveryVisible) {
+      window.setTimeout(() => accountRecoveryInput.focus(), 40);
+    }
+  }
+
+  async function copyAccountCode() {
+    if (!anonymousAccount?.recoveryCode) return;
+    try {
+      await navigator.clipboard.writeText(anonymousAccount.recoveryCode);
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(treeAccountCode);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.execCommand("copy");
+      selection.removeAllRanges();
+    }
+    accountRecoveryError.textContent = t("recoveryCopied");
+  }
+
+  async function ensureAnonymousAccount() {
+    if (anonymousAccount?.recoveryCode) return anonymousAccount;
+    if (!communityApiBase) throw new Error("Community API is not configured");
+    const created = await apiRequest("/api/accounts", { method: "POST" });
+    if (!created?.accountId || !created?.recoveryCode) {
+      throw new Error("Anonymous account response is incomplete");
+    }
+    setAnonymousAccount(created);
+    return anonymousAccount;
+  }
+
+  async function prepareAnonymousAccount() {
+    if (!communityApiBase || accountSyncAttempted) return;
+    if (!anonymousAccount && !ownerTreeCode) return;
+    accountSyncAttempted = true;
+    try {
+      if (!anonymousAccount) await ensureAnonymousAccount();
+      const recovered = await apiRequest("/api/accounts/recover", {
+        method: "POST",
+        body: JSON.stringify({ recoveryCode: anonymousAccount.recoveryCode }),
+      });
+      setAnonymousAccount({
+        accountId: recovered.accountId,
+        recoveryCode: recovered.recoveryCode,
+      });
+      if (recovered.tree?.code) {
+        ownerTreeCode = String(recovered.tree.code);
+        saveOwnerTreeCode();
+      } else if (ownerTreeCode) {
+        const legacyOwnerToken = ownerTokensForTree(ownerTreeCode).find(
+          (token) => token !== "local",
+        );
+        if (legacyOwnerToken) {
+          await apiRequest("/api/accounts/claim-tree", {
+            method: "POST",
+            body: JSON.stringify({
+              recoveryCode: anonymousAccount.recoveryCode,
+              treeCode: ownerTreeCode,
+              legacyOwnerToken,
+            }),
+          });
+        }
+      }
+      updateTreeAccessSummary();
+      updateSpaceUI();
+    } catch (error) {
+      accountRecoveryError.textContent =
+        error.status === 401 ? t("accountRecoveryInvalid") : t("accountSyncFailed");
+    }
+  }
+
+  async function recoverAnonymousAccount() {
+    const recoveryCode = accountRecoveryInput.value.trim();
+    accountRecoveryError.textContent = "";
+    if (!recoveryCode) {
+      accountRecoveryError.textContent = t("accountRecoveryInvalid");
+      return;
+    }
+    recoverAccountButton.disabled = true;
+    accountRecoveryError.textContent = t("accountRecovering");
+    try {
+      const recovered = await apiRequest("/api/accounts/recover", {
+        method: "POST",
+        body: JSON.stringify({ recoveryCode }),
+      });
+      setAnonymousAccount(recovered);
+      if (recovered.tree?.code) {
+        ownerTreeCode = String(recovered.tree.code);
+        saveOwnerTreeCode();
+        accountRecoveryError.textContent = t("accountRecovered");
+      } else {
+        accountRecoveryError.textContent = t("accountNoTree");
+      }
+      accountRecoveryInput.value = "";
+      accountRecoveryVisible = false;
+      updateAccountUI();
+      updateTreeAccessSummary();
+      updateSpaceUI();
+      setLog(`account.recover // ${recovered.accountId.slice(0, 8)} // anonymous`);
+    } catch (error) {
+      accountRecoveryError.textContent =
+        error.status === 401 || error.status === 400
+          ? t("accountRecoveryInvalid")
+          : t("accountRecoveryFailed");
+    } finally {
+      recoverAccountButton.disabled = false;
+    }
+  }
+
   function updateTreeAccessSummary() {
     const hasOwnerTree = Boolean(ownerTreeCode);
     treeOwnerSummary.hidden = !hasOwnerTree;
@@ -6295,13 +6723,18 @@ blockquote {
 
   function openTreeAccessDialog() {
     treeJoinVisible = false;
+    accountRecoveryVisible = false;
     treeCodeInput.value = "";
+    accountRecoveryInput.value = "";
     treeAccessError.textContent = "";
+    accountRecoveryError.textContent = "";
     resetDestroyTreeControl();
+    updateAccountUI();
     updateTreeAccessSummary();
     treeAccessDialog.classList.add("is-open");
     treeAccessDialog.setAttribute("aria-hidden", "false");
     window.setTimeout(() => (ownerTreeCode ? openOwnTreeButton : treeNameInput).focus(), 80);
+    void prepareAnonymousAccount();
   }
 
   function closeTreeAccessDialog() {
@@ -6398,6 +6831,11 @@ blockquote {
     let savedNote = null;
     let shared = false;
     if (communityApiBase) {
+      try {
+        await ensureAnonymousAccount();
+      } catch {
+        // The tree falls back to browser-only storage if the account service is unavailable.
+      }
       for (let attempt = 0; attempt < 12; attempt += 1) {
         const candidate = String(100000 + Math.floor(Math.random() * 900000));
         if (localPrivateTrees[candidate] || candidate === ownerTreeCode) continue;
@@ -6419,6 +6857,7 @@ blockquote {
               author: note.author,
               treeName: note.treeName,
               seed: note.seed,
+              accountRecoveryCode: anonymousAccount?.recoveryCode || "",
             }),
           });
           if (created?.ownerToken) rememberOrangeOwner(created.id, created.ownerToken);
@@ -6538,7 +6977,8 @@ blockquote {
     const notes = [...(localPrivateTrees[code] || [])];
     const tokenCandidates = ownerTokensForTree(code);
     const sharedTokens = tokenCandidates.filter((token) => token !== "local");
-    if (!tokenCandidates.length) {
+    const hasAccount = Boolean(anonymousAccount?.recoveryCode);
+    if (!tokenCandidates.length && !hasAccount) {
       treeAccessError.textContent = t("treeOwnerMissing");
       return;
     }
@@ -6546,11 +6986,17 @@ blockquote {
     destroyPrivateTreeButton.disabled = true;
     let remoteDeleted = false;
     let deletionError = null;
-    for (const token of sharedTokens) {
+    const accountToken = anonymousAccount?.recoveryCode || "";
+    const authorizationTokens = accountToken ? [accountToken, ...sharedTokens] : sharedTokens;
+    for (const token of authorizationTokens) {
       try {
         await apiRequest(`/api/trees/${encodeURIComponent(code)}`, {
           method: "DELETE",
-          body: JSON.stringify({ ownerToken: token }),
+          body: JSON.stringify(
+            token === accountToken
+              ? { accountRecoveryCode: token }
+              : { ownerToken: token },
+          ),
         });
         remoteDeleted = true;
         break;
@@ -6565,7 +7011,7 @@ blockquote {
     }
 
     const hasLocalOwner = tokenCandidates.includes("local");
-    if (sharedTokens.length && !remoteDeleted && !hasLocalOwner) {
+    if ((accountToken || sharedTokens.length) && !remoteDeleted && !hasLocalOwner) {
       destroyPrivateTreeButton.disabled = false;
       treeAccessError.textContent =
         deletionError?.status === 403 ? t("treeDestroyDenied") : t("treeDestroyFailed");
@@ -7142,6 +7588,15 @@ blockquote {
   returnMainButton.addEventListener("click", backToMainTree);
   closeTreeAccessButton.addEventListener("click", closeTreeAccessDialog);
   treeAccessDialog.querySelector("[data-close-tree-access]").addEventListener("click", closeTreeAccessDialog);
+  copyAccountCodeButton.addEventListener("click", copyAccountCode);
+  toggleAccountRecoveryButton.addEventListener("click", toggleAccountRecovery);
+  recoverAccountButton.addEventListener("click", recoverAnonymousAccount);
+  accountRecoveryInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      recoverAnonymousAccount();
+    }
+  });
   toggleTreeJoinButton.addEventListener("click", toggleTreeJoin);
   enterTreeButton.addEventListener("click", enterPrivateTreeFromInput);
   createTreeButton.addEventListener("click", createMyPrivateTree);

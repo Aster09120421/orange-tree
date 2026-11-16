@@ -31,6 +31,48 @@ function isPrivateTreeSeed(value) {
   return Number.isInteger(seed) && seed >= 100000 && seed <= 999999;
 }
 
+function recoveryHex(value) {
+  const compact = String(value || "")
+    .toUpperCase()
+    .replace(/[^A-F0-9]/g, "");
+  return compact.length === 32 ? compact : "";
+}
+
+function formatRecoveryCode(hex) {
+  return `OT-${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+async function recoveryHash(value) {
+  const hex = recoveryHex(value);
+  if (!hex) return "";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`orange-tree-anonymous-account-v1|${hex}`),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function findAccount(request, env, recoveryCode) {
+  const hash = await recoveryHash(recoveryCode);
+  if (!hash) return null;
+  return env.DB.prepare(
+    "SELECT id, created_at FROM anonymous_accounts WHERE recovery_hash = ?",
+  )
+    .bind(hash)
+    .first();
+}
+
+async function ownedTreeForAccount(env, accountId) {
+  return env.DB.prepare(
+    "SELECT t.code, t.tree_name, t.created_at FROM tree_owner_accounts o " +
+      "JOIN trees t ON t.code = o.tree_code WHERE o.account_id = ? LIMIT 1",
+  )
+    .bind(accountId)
+    .first();
+}
+
 async function readBody(request) {
   const contentLength = Number(request.headers.get("Content-Length") || 0);
   if (contentLength > 8192) {
@@ -160,6 +202,7 @@ async function createOrange(request, env) {
   const text = clean(payload.text, 48);
   const author = clean(payload.author, 16);
   const requestedTreeName = clean(payload.treeName, 20);
+  const accountRecoveryCode = String(payload.accountRecoveryCode || "");
   const seed = Number(payload.seed) || 0;
   if (!text) return error("Message is required", 400);
   if (seed && !Number.isInteger(seed)) return error("Invalid seed", 400);
@@ -179,11 +222,18 @@ async function createOrange(request, env) {
         .first();
       if (!existingTree) {
         if (!treeName) return error("Tree name is required", 400);
-        await env.DB.prepare(
-          "INSERT INTO trees (code, tree_name, created_at) VALUES (?, ?, ?)",
-        )
-          .bind(seed, treeName, createdAt)
-          .run();
+        const account = await findAccount(request, env, accountRecoveryCode);
+        if (!account) return error("A valid anonymous account is required", 401);
+        const ownedTree = await ownedTreeForAccount(env, account.id);
+        if (ownedTree) return error("This anonymous account already owns a tree", 409);
+        await env.DB.batch([
+          env.DB.prepare(
+            "INSERT INTO trees (code, tree_name, created_at) VALUES (?, ?, ?)",
+          ).bind(seed, treeName, createdAt),
+          env.DB.prepare(
+            "INSERT INTO tree_owner_accounts (tree_code, account_id, created_at) VALUES (?, ?, ?)",
+          ).bind(seed, account.id, createdAt),
+        ]);
       } else {
         treeName = existingTree.tree_name || treeName;
       }
@@ -278,20 +328,33 @@ async function deletePrivateTree(request, env, treeCode) {
   const body = await readBody(request);
   if (body.error) return error(body.error, body.status);
   const ownerToken = String(body.payload.ownerToken || "");
-  if (!ownerToken) return error("Owner token is required", 400);
+  const accountRecoveryCode = String(body.payload.accountRecoveryCode || "");
 
   const tree = await env.DB.prepare("SELECT code FROM trees WHERE code = ?")
     .bind(Number(treeCode))
     .first();
   if (!tree) return error("Tree not found", 404);
 
+  let authorized = false;
+  if (accountRecoveryCode) {
+    const account = await findAccount(request, env, accountRecoveryCode);
+    if (account) {
+      const ownedTree = await env.DB.prepare(
+        "SELECT tree_code FROM tree_owner_accounts WHERE account_id = ? AND tree_code = ?",
+      )
+        .bind(account.id, Number(treeCode))
+        .first();
+      authorized = Boolean(ownedTree);
+    }
+  }
+
   const firstOrange = await env.DB.prepare(
     "SELECT owner_token FROM oranges WHERE seed = ? ORDER BY created_at ASC, rowid ASC LIMIT 1",
   )
     .bind(Number(treeCode))
     .first();
-  if (!firstOrange) return error("Tree owner record not found", 404);
-  if (ownerToken !== firstOrange.owner_token) {
+  if (!firstOrange && !authorized) return error("Tree owner record not found", 404);
+  if (!authorized && (!ownerToken || ownerToken !== firstOrange.owner_token)) {
     return error("Only the tree owner can destroy this tree", 403);
   }
 
@@ -300,10 +363,102 @@ async function deletePrivateTree(request, env, treeCode) {
       "DELETE FROM replies WHERE orange_id IN (SELECT id FROM oranges WHERE seed = ?)",
     ).bind(Number(treeCode)),
     env.DB.prepare("DELETE FROM oranges WHERE seed = ?").bind(Number(treeCode)),
+    env.DB.prepare("DELETE FROM tree_owner_accounts WHERE tree_code = ?").bind(Number(treeCode)),
     env.DB.prepare("DELETE FROM trees WHERE code = ?").bind(Number(treeCode)),
   ]);
 
   return json({ ok: true, code: treeCode });
+}
+
+async function createAnonymousAccount(request, env) {
+  if (!(await rateLimit(request, env, "account-create", 4, 60))) {
+    return error("Too many requests. Please try again later.", 429);
+  }
+  const id = crypto.randomUUID();
+  const recoveryCode = `OT-${crypto.randomUUID().toUpperCase()}`;
+  const hash = await recoveryHash(recoveryCode);
+  const createdAt = new Date().toISOString();
+  await env.DB.prepare(
+    "INSERT INTO anonymous_accounts (id, recovery_hash, created_at) VALUES (?, ?, ?)",
+  )
+    .bind(id, hash, createdAt)
+    .run();
+  return json({ accountId: id, recoveryCode, createdAt }, 201);
+}
+
+async function recoverAnonymousAccount(request, env) {
+  if (!(await rateLimit(request, env, "account-recover", 5, 60))) {
+    return error("Too many requests. Please try again later.", 429);
+  }
+  const body = await readBody(request);
+  if (body.error) return error(body.error, body.status);
+  const recoveryCode = String(body.payload.recoveryCode || "");
+  if (!recoveryHex(recoveryCode)) return error("Recovery code is invalid", 400);
+  const account = await findAccount(request, env, recoveryCode);
+  if (!account) return error("Recovery code is invalid", 401);
+  const tree = await ownedTreeForAccount(env, account.id);
+  return json({
+    accountId: account.id,
+    recoveryCode: formatRecoveryCode(recoveryHex(recoveryCode)),
+    tree: tree
+      ? {
+          code: String(tree.code),
+          treeName: tree.tree_name || "",
+          createdAt: tree.created_at,
+        }
+      : null,
+  });
+}
+
+async function claimAnonymousTree(request, env) {
+  if (!(await rateLimit(request, env, "account-claim", 5, 60))) {
+    return error("Too many requests. Please try again later.", 429);
+  }
+  const body = await readBody(request);
+  if (body.error) return error(body.error, body.status);
+  const recoveryCode = String(body.payload.recoveryCode || "");
+  const treeCode = String(body.payload.treeCode || "");
+  const legacyOwnerToken = String(body.payload.legacyOwnerToken || "");
+  if (!/^\d{6}$/.test(treeCode) || !legacyOwnerToken) {
+    return error("Tree code and owner token are required", 400);
+  }
+  const account = await findAccount(request, env, recoveryCode);
+  if (!account) return error("Recovery code is invalid", 401);
+  const tree = await env.DB.prepare("SELECT code, tree_name FROM trees WHERE code = ?")
+    .bind(Number(treeCode))
+    .first();
+  if (!tree) return error("Tree not found", 404);
+  const firstOrange = await env.DB.prepare(
+    "SELECT owner_token FROM oranges WHERE seed = ? ORDER BY created_at ASC, rowid ASC LIMIT 1",
+  )
+    .bind(Number(treeCode))
+    .first();
+  if (!firstOrange || firstOrange.owner_token !== legacyOwnerToken) {
+    return error("Only the tree owner can claim this tree", 403);
+  }
+  const existingOwnership = await env.DB.prepare(
+    "SELECT account_id FROM tree_owner_accounts WHERE tree_code = ?",
+  )
+    .bind(Number(treeCode))
+    .first();
+  if (existingOwnership && existingOwnership.account_id !== account.id) {
+    return error("This tree is already linked to another account", 409);
+  }
+  const ownedTree = await ownedTreeForAccount(env, account.id);
+  if (ownedTree && String(ownedTree.code) !== treeCode) {
+    return error("This anonymous account already owns a tree", 409);
+  }
+  if (!existingOwnership) {
+    await env.DB.prepare(
+      "INSERT INTO tree_owner_accounts (tree_code, account_id, created_at) VALUES (?, ?, ?)",
+    )
+      .bind(Number(treeCode), account.id, new Date().toISOString())
+      .run();
+  }
+  return json({
+    ok: true,
+    tree: { code: treeCode, treeName: tree.tree_name || "" },
+  });
 }
 
 export async function handleApi({ request, env }) {
@@ -319,6 +474,15 @@ export async function handleApi({ request, env }) {
     }
     if (request.method === "GET" && path === "/api/health") {
       return json({ ok: true });
+    }
+    if (path === "/api/accounts" && request.method === "POST") {
+      return createAnonymousAccount(request, env);
+    }
+    if (path === "/api/accounts/recover" && request.method === "POST") {
+      return recoverAnonymousAccount(request, env);
+    }
+    if (path === "/api/accounts/claim-tree" && request.method === "POST") {
+      return claimAnonymousTree(request, env);
     }
     if (path === "/api/oranges") {
       if (request.method === "GET") return listOranges(request, env);

@@ -4,6 +4,20 @@ CREATE TABLE IF NOT EXISTS trees (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS anonymous_accounts (
+  id TEXT PRIMARY KEY,
+  recovery_hash TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tree_owner_accounts (
+  tree_code INTEGER PRIMARY KEY,
+  account_id TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (tree_code) REFERENCES trees(code) ON DELETE CASCADE,
+  FOREIGN KEY (account_id) REFERENCES anonymous_accounts(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS oranges (
   id TEXT PRIMARY KEY,
   text TEXT NOT NULL,
@@ -37,3 +51,6 @@ CREATE INDEX IF NOT EXISTS idx_replies_orange_created
 
 CREATE INDEX IF NOT EXISTS idx_rate_limits_expires
   ON rate_limits(expires_at);
+
+CREATE INDEX IF NOT EXISTS idx_tree_owner_accounts_account
+  ON tree_owner_accounts(account_id);
