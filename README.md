@@ -75,7 +75,7 @@ python3 build_single_file.py
 
 ## Cloudflare 免费部署
 
-免费长期在线方案使用 Cloudflare Pages、Pages Functions 和 D1。完整的数据库初始化、D1 绑定和 Pages 部署步骤见 [CLOUDFLARE_DEPLOY.md](./CLOUDFLARE_DEPLOY.md)。
+免费长期在线方案使用 Cloudflare Worker、Static Assets 和 D1。完整的数据库初始化、Worker 配置和部署步骤见 [CLOUDFLARE_DEPLOY.md](./CLOUDFLARE_DEPLOY.md)。
 
 ## 不部署公网服务器时如何跨网络
 

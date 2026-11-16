@@ -1,0 +1,13 @@
+name = "orange-tree"
+main = "worker/index.js"
+compatibility_date = "2026-11-17"
+workers_dev = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "orange-tree-db"
+database_id = "b2400b11-cadb-45a2-9658-686b40eff819"
